@@ -35,7 +35,10 @@ function startPrompts() {
         "View all departments",
         "View all roles",
         "View all employees",
+        "View all managers",
+        "View employees by manager",
         "Update an employee's role",
+        "Update an employee's manager",
         "Exit"
       ]
     })
@@ -54,6 +57,14 @@ function startPrompts() {
           viewEmployees();
           break;
 
+        case "View all managers":
+          viewManagers();
+          break;
+
+        case "View employees by manager":
+          viewEmployeesByManager();
+          break;
+
         case "Add a new department":
           addNewDepartment();
           break;
@@ -68,6 +79,10 @@ function startPrompts() {
 
         case "Update an employee's role":
           updateEmployeeRole();
+          break;
+
+        case "Update an employee's manager":
+          updateEmployeeManager();
           break;
 
         case "Exit":
@@ -102,13 +117,49 @@ function viewRoles() {
 }
 
 function viewEmployees() {
-  let query = "SELECT * FROM employee";
+  let query = `SELECT e.id, CONCAT(e.first_name, " ", e.last_name) AS "Employee Name", r.title AS "Position", d.name AS "Department", e.manager_id AS "Manager's id"
+                FROM employee AS e 
+                  LEFT JOIN role AS r ON e.role_id = r.id 
+                  LEFT JOIN department AS d ON r.department_id = d.id`;
   connection.query(query, function (err, res) {
     if (err) throw err;
     console.table(res);
     startPrompts();
   });
 }
+
+function viewEmployeesByManager() {
+  inquirer
+    .prompt([
+      {
+        name: "selectManager",
+        type: "number",
+        message: "What is the id of the manager you wish to view?"
+      },
+    ])
+    .then(function (answer) {
+      connection.query(`SELECT e.id AS 'Manager id', CONCAT(e.first_name, ' ', e.last_name) AS 'Manager', r.title AS 'Position', d.name AS 'Department', CONCAT(m.first_name, m.last_name) AS 'Employees Managed:'
+            FROM employee AS e 
+              LEFT JOIN role AS r ON e.role_id = r.id 
+              LEFT JOIN department AS d ON r.department_id = d.id
+              LEFT JOIN employee AS m ON e.id = m.manager_id
+              WHERE e.id = ?`, answer.selectManager, function (err, res) {
+          if (err) throw err;
+          console.table(res);
+          startPrompts();
+        });
+    });
+
+}
+
+// function viewManagers() {
+//   let query = "SELECT * FROM employee";
+//   connection.query(query, function (err, res) {
+//     if (err) throw err;
+//     console.table(res);
+//     startPrompts();
+//   });
+// }
 
 // The inquirer function called when a new department is being added.
 function addNewDepartment() {
@@ -304,18 +355,57 @@ function updateEmployeeRole() {
         name: "selectNewRole",
         type: "number",
         message: "What is the id of the employee's new role?"
-      }      
+      }
     ])
-      .then(function (answer) {
-        connection.query("UPDATE employee AS e SET e.role_id = ? WHERE e.id = ?", [answer.selectNewRole, answer.selectEmployee], function (err, res) {
-          if (err) throw err;
-          console.log("The employee's role was changed succesfully!");
-          startPrompts();
-        });
+    .then(function (answer) {
+      connection.query("UPDATE employee AS e SET e.role_id = ? WHERE e.id = ?", [answer.selectNewRole, answer.selectEmployee], function (err, res) {
+        if (err) throw err;
+        console.log("The employee's role was changed succesfully!");
+        startPrompts();
       });
+    });
 
-  }
+}
 
+function updateEmployeeManager() {
+  inquirer
+    .prompt([
+      {
+        name: "selectEmployee",
+        type: "number",
+        message: "What is the id of the employee whose manager is changing?"
+      },
+      {
+        name: "selectNewManager",
+        type: "number",
+        message: "What is the id of the employee's new manager?"
+      }
+    ])
+    .then(function (answer) {
+      connection.query("UPDATE employee AS e SET e.manager_id = ? WHERE e.id = ?", [answer.selectNewManager, answer.selectEmployee], function (err, res) {
+        if (err) throw err;
+        console.log("The employee's manager was changed succesfully!");
+        startPrompts();
+      });
+    });
+
+}
+
+function viewManagers() {
+
+  connection.query(`SELECT e.id AS 'Employee id', CONCAT(e.first_name, ' ', e.last_name) AS 'Manager', r.title AS 'Position', d.name AS 'Department', CONCAT(m.first_name, m.last_name) AS 'Employees Managed:'
+                FROM employee AS e 
+                  LEFT JOIN role AS r ON e.role_id = r.id 
+                  LEFT JOIN department AS d ON r.department_id = d.id
+                  LEFT JOIN employee AS m ON e.id = m.manager_id`,
+    function (err, res) {
+      if (err) throw err;
+      console.table(res);
+      startPrompts();
+    });
+};
+    
+      
 
 
 
