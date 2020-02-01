@@ -39,6 +39,9 @@ function startPrompts() {
         "View employees by manager",
         "Update an employee's role",
         "Update an employee's manager",
+        "Delete a department",
+        "Delete a role",
+        "Delete an employee",
         "Exit"
       ]
     })
@@ -85,14 +88,29 @@ function startPrompts() {
           updateEmployeeManager();
           break;
 
+        case "Delete a department":
+          deleteDepartment();
+          break
+
+        case "Delete a role":
+          deleteRole();
+          break
+
+        case "Delete an employee":
+            deleteEmployee();
+            break
+
         case "Exit":
-          connection.close(function (err) {
+          exit();
+          function exit(){
+            connection.close(function (err) {
             if (err) {
               console.log('Error closing connection', err);
             } else {
               console.log('Connection closed');
             }
           });
+        }
       }
     });
 }
@@ -404,10 +422,58 @@ function viewManagers() {
       startPrompts();
     });
 };
-    
-      
 
+function deleteDepartment() {
+    inquirer
+      .prompt([
+        {
+          name: "selectDepartmentDelete",
+          type: "number",
+          message: "What is the id of the department you want to delete?"
+        },
+      ])
+      .then(function (answer) {
+        connection.query(`DELETE FROM department WHERE id = ?`, answer.selectDepartmentDelete, function (err, res) {
+            if (err) throw err;
+            console.log("Department deleted (WARNING: THIS WILL DELETE ALL EMPLOYEES AND ROLES WITHIN THAT DEPARTMENT)");
+            startPrompts();
+          });
+      });
+  
+  }
 
+function deleteRole() {
+    inquirer
+      .prompt([
+        {
+          name: "selectRoleDelete",
+          type: "number",
+          message: "What is the id of the role you want to delete? (WARNING: THIS WILL DELETE ALL EMPLOYEES WITH THAT ROLE)"
+        },
+      ])
+      .then(function (answer) {
+        connection.query(`DELETE FROM role WHERE id = ?`, answer.selectRoleDelete, function (err, res) {
+            if (err) throw err;
+            console.log("Role deleted!");
+            startPrompts();
+          });
+      });
+  }
 
-
-// If you need to delete a department or role, or an employee who manages another, you'll need to casade the delete
+  function deleteEmployee() {
+    inquirer
+      .prompt([
+        {
+          name: "selectEmployeeDelete",
+          type: "number",
+          message: "What is the id of the employee you want to delete?"
+        },
+      ])
+      .then(function (answer) {
+        connection.query(`DELETE FROM employeee WHERE id = ?`, answer.selectEmployeeDelete, function (err, res) {
+            if (err) throw err;
+            console.log("Employee deleted!");
+            startPrompts();
+          });
+      });
+  }
